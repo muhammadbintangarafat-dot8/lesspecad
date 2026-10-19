@@ -4,6 +4,7 @@
 
 package com.example
 
+import com.lesspecad.browser.R
 import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.ClipData
