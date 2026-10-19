@@ -1,59 +1,51 @@
 
-name: Build Lesspecad APK
+name: Build debug APK
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+  pull_request:
 
 permissions:
   contents: read
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    name: Build Lesspecad APK
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v5
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Locate Android SDK
-        shell: bash
+      - name: Verify project files
         run: |
-          echo "ANDROID_HOME=${ANDROID_HOME}"
-          echo "ANDROID_SDK_ROOT=${ANDROID_HOME}"
+          test -f gradlew
+          test -f app/build.gradle.kts
+          chmod +x gradlew
 
-          SDKMANAGER="$(find "$ANDROID_HOME" \
-            -type f -name sdkmanager -perm /111 \
-            -print -quit 2>/dev/null || true)"
-
-          if [ -n "$SDKMANAGER" ]; then
-            echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
-            echo "SDKMANAGER ditemukan: $SDKMANAGER"
-          else
-            echo "SDKMANAGER tidak ditemukan"
-          fi
-
-      - name: Accept Android SDK licenses
-        shell: bash
+      - name: Generate debug keystore
         run: |
-          if [ -n "${SDKMANAGER:-}" ] && [ -x "$SDKMANAGER" ]; then
-            yes | "$SDKMANAGER" --licenses || true
-          else
-            echo "Lisensi tidak diproses; melanjutkan ke build"
-          fi
+          keytool -genkeypair \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build debug APK
-        run: |
-          chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon
+        run: ./gradlew --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -61,3 +53,4 @@ jobs:
           name: Lesspecad-debug-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 7
