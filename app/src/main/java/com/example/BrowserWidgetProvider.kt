@@ -1,5 +1,6 @@
 package com.example
 
+import com.lesspecad.browser.R
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
