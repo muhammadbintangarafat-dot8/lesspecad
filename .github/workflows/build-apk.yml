@@ -24,18 +24,25 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Accept Android SDK licenses
+      - name: Find Android SDK and accept licenses
         shell: bash
         run: |
           set -e
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          echo "ANDROID_HOME=$ANDROID_HOME"
 
-          if [ ! -x "$SDKMANAGER" ]; then
-            echo "sdkmanager tidak ditemukan: $SDKMANAGER"
+          SDKMANAGER="$(find "$ANDROID_HOME" \
+            -type f -name sdkmanager -perm /111 \
+            -print -quit)"
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "ERROR: sdkmanager tidak ditemukan"
+            find "$ANDROID_HOME/cmdline-tools" \
+              -maxdepth 4 -type f -print 2>/dev/null || true
             exit 1
           fi
 
-          yes | "$SDKMANAGER" --licenses || true
+          echo "Menggunakan: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses
 
       - name: Build debug APK
         run: |
